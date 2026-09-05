@@ -35,6 +35,8 @@ def _ensure_init():
 
 def embed_text(text: str) -> List[float]:
     """Return an embedding vector for a piece of text using Vertex AI."""
+    if settings.USE_MOCK_AI:
+        return _mock_embedding(text)
     _ensure_init()
     model = TextEmbeddingModel.from_pretrained(settings.EMBEDDING_MODEL)
     embeddings = model.get_embeddings([text])
@@ -43,6 +45,8 @@ def embed_text(text: str) -> List[float]:
 
 def embed_texts_batch(texts: List[str]) -> List[List[float]]:
     """Batch-embed multiple texts in one call for efficient CSV ingestion."""
+    if settings.USE_MOCK_AI:
+        return [_mock_embedding(t) for t in texts]
     _ensure_init()
     model = TextEmbeddingModel.from_pretrained(settings.EMBEDDING_MODEL)
     embeddings = model.get_embeddings(texts)
@@ -92,6 +96,8 @@ def review_code(
     Calls Gemini on Vertex AI to produce a structured code review,
     grounded in the retrieved historical rules.
     """
+    if settings.USE_MOCK_AI:
+        return _mock_review(historical_rules)
     _ensure_init()
     model = GenerativeModel(settings.GEMINI_MODEL)
     prompt = _build_prompt(language, code, historical_rules)
@@ -125,3 +131,4 @@ def _safe_parse_json(text: str) -> Dict[str, Any]:
             "optimization_notes": "N/A",
             "applied_historical_rules": [],
         }
+

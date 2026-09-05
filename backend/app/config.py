@@ -42,6 +42,7 @@ class Settings:
     # --- App ---
     MAX_CODE_CHARS: int = int(os.getenv("MAX_CODE_CHARS", "50000"))
     TOP_K_HISTORICAL_RULES: int = int(os.getenv("TOP_K_HISTORICAL_RULES", "5"))
+    USE_MOCK_AI: bool = os.getenv("USE_MOCK_AI", "true").lower() == "true"
 
 
 settings = Settings()
