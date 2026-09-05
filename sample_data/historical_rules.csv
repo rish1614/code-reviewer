@@ -1,0 +1,11 @@
+id,type,description
+1,formatting,Avoid single-character variable names — they hurt readability
+2,performance,Cache repeated database lookups inside the request loop
+3,security,Never interpolate raw user input directly into SQL queries
+4,security,Always validate and sanitize file upload extensions before saving to disk
+5,performance,Avoid nested loops over large datasets; prefer hashmaps for lookups
+6,formatting,Use consistent indentation and naming conventions across a codebase
+7,architecture,Keep business logic out of controller/route handlers
+8,security,Never log sensitive data such as passwords or access tokens
+9,performance,Batch network or database calls instead of calling them one by one
+10,architecture,Favor dependency injection over hard-coded singletons for testability

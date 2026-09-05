@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nightshift — The 24/7 Intelligent Code Reviewer</title>
+<style>
+  :root {
+    --bg: #14161a;
+    --panel: #1b1e24;
+    --panel-line: #2a2e37;
+    --text: #e6e8eb;
+    --dim: #8b909c;
+    --accent: #7fd1ae;
+    --warn: #e0a458;
+    --danger: #e0725f;
+    --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+    --sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.5;
+  }
+  header {
+    padding: 28px 40px 20px;
+    border-bottom: 1px solid var(--panel-line);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand-mark {
+    font-family: var(--mono);
+    color: var(--accent);
+    font-size: 14px;
+  }
+  .brand-name {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .tagline {
+    color: var(--dim);
+    font-size: 13px;
+    font-family: var(--mono);
+  }
+  main {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 40px;
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 28px;
+  }
+  @media (max-width: 860px) {
+    main { grid-template-columns: 1fr; padding: 24px; }
+    header { padding: 20px 24px; flex-direction: column; gap: 6px; }
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    border-radius: 6px;
+    padding: 22px;
+  }
+  .panel h2 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .panel .sub {
+    color: var(--dim);
+    font-size: 12.5px;
+    margin: 0 0 16px;
+  }
+  select, textarea, input[type=file] {
+    width: 100%;
+    background: #101215;
+    border: 1px solid var(--panel-line);
+    border-radius: 4px;
+    color: var(--text);
+    padding: 10px 12px;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  select { margin-bottom: 12px; }
+  textarea {
+    min-height: 260px;
+    resize: vertical;
+    margin-bottom: 14px;
+  }
+  textarea:focus, select:focus { outline: 1px solid var(--accent); }
+  button {
+    background: var(--accent);
+    color: #0c1210;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 18px;
+    font-weight: 600;
+    font-size: 13.5px;
+    cursor: pointer;
+    font-family: var(--sans);
+  }
+  button:hover { filter: brightness(1.08); }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button.ghost {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--panel-line);
+  }
+  .row { display: flex; gap: 10px; align-items: center; }
+  .rating-badge {
+    font-family: var(--mono);
+    font-size: 34px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .rating-scale { color: var(--dim); font-size: 13px; }
+  .result-block { margin-top: 14px; }
+  .result-block h3 {
+    font-size: 12.5px;
+    text-transform: none;
+    color: var(--dim);
+    margin: 0 0 6px;
+    font-family: var(--mono);
+  }
+  .result-block p {
+    margin: 0;
+    font-size: 13.5px;
+    white-space: pre-wrap;
+  }
+  .rule-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--warn);
+    border: 1px solid #4a3d2b;
+    background: #241d13;
+    border-radius: 3px;
+    padding: 2px 6px;
+    margin: 2px 4px 0 0;
+  }
+  .history-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--panel-line);
+    font-size: 13px;
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-item .score { font-family: var(--mono); color: var(--accent); }
+  .empty-note { color: var(--dim); font-size: 13px; }
+  .status-line {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--dim);
+    margin-top: 10px;
+  }
+  footer {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 40px 40px;
+    color: var(--dim);
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="brand-mark">&gt;_</span>
+    <span class="brand-name">Nightshift</span>
+  </div>
+  <span class="tagline">the 24/7 intelligent code reviewer</span>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>Submit code for review</h2>
+    <p class="sub">Analyzed by Gemini, grounded in your team's historical review rules.</p>
+
+    <select id="language">
+      <option value="python">Python</option>
+      <option value="javascript">JavaScript</option>
+      <option value="typescript">TypeScript</option>
+      <option value="java">Java</option>
+      <option value="go">Go</option>
+      <option value="c++">C++</option>
+      <option value="sql">SQL</option>
+    </select>
+
+    <textarea id="code" placeholder="Paste a function, file, or diff to review..."></textarea>
+
+    <div class="row">
+      <button id="submitBtn">Run review</button>
+      <button class="ghost" id="loadHistoryBtn">Refresh history</button>
+    </div>
+    <div class="status-line" id="status"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Review result</h2>
+    <p class="sub">Quality rating on a 1–10 scale</p>
+    <div id="resultArea">
+      <span class="empty-note">Submit code on the left to see a review here.</span>
+    </div>
+  </section>
+
+  <section class="panel" style="grid-column: 1 / -1;">
+    <h2>Session history</h2>
+    <p class="sub">Every review is saved so growth and patterns can be tracked over time.</p>
+    <div id="historyArea">
+      <span class="empty-note">No reviews yet.</span>
+    </div>
+  </section>
+
+  <section class="panel" style="grid-column: 1 / -1;">
+    <h2>Historical rules dataset</h2>
+    <p class="sub">Upload the CSV (id, type, description) used to ground future reviews.</p>
+    <div class="row">
+      <input type="file" id="csvFile" accept=".csv" />
+      <button id="uploadCsvBtn" style="white-space:nowrap;">Ingest CSV</button>
+    </div>
+    <div class="status-line" id="csvStatus"></div>
+  </section>
+</main>
+
+<footer>
+  Deployed on Cloud Run · Gemini via Vertex AI · Cloud SQL · Identity Platform
+</footer>
+
+<script>
+  // Point this at your deployed Cloud Run service URL.
+  const API_BASE = window.API_BASE || "http://localhost:8080";
+
+  // In production, replace this with a real Firebase ID token obtained
+  // from Firebase Auth client SDK sign-in. Left blank here because the
+  // backend's local-dev mode (DISABLE_AUTH_FOR_LOCAL_DEV) accepts
+  // unauthenticated requests for demoing the flow end to end.
+  let authToken = "";
+
+  function authHeaders(extra = {}) {
+    const headers = { ...extra };
+    if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
+    return headers;
+  }
+
+  async function submitReview() {
+    const language = document.getElementById("language").value;
+    const code = document.getElementById("code").value.trim();
+    const statusEl = document.getElementById("status");
+    const resultArea = document.getElementById("resultArea");
+
+    if (!code) {
+      statusEl.textContent = "Paste some code first.";
+      return;
+    }
+
+    statusEl.textContent = "Analyzing with Gemini...";
+    document.getElementById("submitBtn").disabled = true;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/reviews`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ language, code }),
+      });
+
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+      const data = await res.json();
+      renderResult(data);
+      statusEl.textContent = "Review complete.";
+      loadHistory();
+    } catch (err) {
+      statusEl.textContent = `Error: ${err.message}`;
+    } finally {
+      document.getElementById("submitBtn").disabled = false;
+    }
+  }
+
+  function renderResult(data) {
+    const resultArea = document.getElementById("resultArea");
+    const rulesHtml = (data.matched_rules || [])
+      .map((r) => `<span class="rule-tag">rule #${r}</span>`)
+      .join("");
+
+    resultArea.innerHTML = `
+      <div class="row">
+        <span class="rating-badge">${data.quality_rating}</span>
+        <span class="rating-scale">/ 10</span>
+      </div>
+      <div class="result-block">
+        <h3>bug report</h3>
+        <p>${escapeHtml(data.bug_report)}</p>
+      </div>
+      <div class="result-block">
+        <h3>best practices</h3>
+        <p>${escapeHtml(data.best_practices)}</p>
+      </div>
+      <div class="result-block">
+        <h3>optimization notes</h3>
+        <p>${escapeHtml(data.optimization_notes)}</p>
+      </div>
+      ${rulesHtml ? `<div class="result-block"><h3>grounded in historical rules</h3>${rulesHtml}</div>` : ""}
+    `;
+  }
+
+  async function loadHistory() {
+    const historyArea = document.getElementById("historyArea");
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/reviews`, {
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+      const items = await res.json();
+
+      if (!items.length) {
+        historyArea.innerHTML = `<span class="empty-note">No reviews yet.</span>`;
+        return;
+      }
+
+      historyArea.innerHTML = items
+        .map(
+          (r) => `
+        <div class="history-item">
+          <span>#${r.id} · ${escapeHtml(r.language)} · ${new Date(r.created_at).toLocaleString()}</span>
+          <span class="score">${r.quality_rating}/10</span>
+        </div>`
+        )
+        .join("");
+    } catch (err) {
+      historyArea.innerHTML = `<span class="empty-note">Could not load history: ${err.message}</span>`;
+    }
+  }
+
+  async function uploadCsv() {
+    const fileInput = document.getElementById("csvFile");
+    const csvStatus = document.getElementById("csvStatus");
+    if (!fileInput.files.length) {
+      csvStatus.textContent = "Choose a CSV file first.";
+      return;
+    }
+    const formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+
+    csvStatus.textContent = "Embedding and ingesting rules...";
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/historical-rules/ingest`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: formData,
+      });
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+      const data = await res.json();
+      csvStatus.textContent = data.message;
+    } catch (err) {
+      csvStatus.textContent = `Error: ${err.message}`;
+    }
+  }
+
+  function escapeHtml(str) {
+    if (!str) return "";
+    return str
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;");
+  }
+
+  document.getElementById("submitBtn").addEventListener("click", submitReview);
+  document.getElementById("loadHistoryBtn").addEventListener("click", loadHistory);
+  document.getElementById("uploadCsvBtn").addEventListener("click", uploadCsv);
+
+  loadHistory();
+</script>
+</body>
+</html>
