@@ -1,16 +1,5 @@
 """
 Vertex AI / Gemini integration.
-
-Two responsibilities:
-  1. embed_text()   -> uses the Vertex AI text-embedding model to turn
-                        text (code, or historical rule descriptions)
-                        into vectors for similarity search.
-  2. review_code()   -> calls Gemini with a structured prompt that
-                        includes the user's code AND the most relevant
-                        historical rules (retrieved via vector search),
-                        and asks for a strict JSON response containing
-                        the bug report, best practices, optimization
-                        notes, and a 1-10 quality rating.
 """
 
 import json
@@ -33,8 +22,12 @@ def _ensure_init():
         _initialized = True
 
 
+def _mock_embedding(text: str) -> List[float]:
+    """Deterministic fake embedding so mock mode still supports similarity search."""
+    return [float((hash(text) >> i) % 10) for i in range(16)]
+
+
 def embed_text(text: str) -> List[float]:
-    """Return an embedding vector for a piece of text using Vertex AI."""
     if settings.USE_MOCK_AI:
         return _mock_embedding(text)
     _ensure_init()
@@ -44,7 +37,6 @@ def embed_text(text: str) -> List[float]:
 
 
 def embed_texts_batch(texts: List[str]) -> List[List[float]]:
-    """Batch-embed multiple texts in one call for efficient CSV ingestion."""
     if settings.USE_MOCK_AI:
         return [_mock_embedding(t) for t in texts]
     _ensure_init()
@@ -89,15 +81,28 @@ SOURCE CODE TO REVIEW:
 """
 
 
+def _mock_review(historical_rules: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Canned review used when USE_MOCK_AI=true."""
+    applied = [r["id"] for r in historical_rules[:2]]
+    return {
+        "quality_rating": 6.5,
+        "bug_report": "MOCK MODE: no live model call was made. Example finding: "
+        "unsanitized input reaches a query/string build step — verify input handling.",
+        "best_practices": "MOCK MODE: consider adding type hints, docstrings, and "
+        "consistent naming conventions.",
+        "optimization_notes": "MOCK MODE: look for repeated work inside loops that "
+        "could be cached or batched.",
+        "applied_historical_rules": applied,
+        "_raw_model_response": "mock mode - no real Gemini call made",
+    }
+
+
 def review_code(
     language: str, code: str, historical_rules: List[Dict[str, Any]]
 ) -> Dict[str, Any]:
-    """
-    Calls Gemini on Vertex AI to produce a structured code review,
-    grounded in the retrieved historical rules.
-    """
     if settings.USE_MOCK_AI:
         return _mock_review(historical_rules)
+
     _ensure_init()
     model = GenerativeModel(settings.GEMINI_MODEL)
     prompt = _build_prompt(language, code, historical_rules)
@@ -118,12 +123,10 @@ def review_code(
 
 
 def _safe_parse_json(text: str) -> Dict[str, Any]:
-    """Gemini is asked for pure JSON, but we defensively strip any stray fences."""
     cleaned = re.sub(r"^```json\s*|```$", "", text.strip(), flags=re.MULTILINE)
     try:
         return json.loads(cleaned)
     except json.JSONDecodeError:
-        # Fall back to a minimal, safe structure rather than crashing the request.
         return {
             "quality_rating": 5.0,
             "bug_report": "Model response could not be parsed as JSON. Raw text preserved.",
@@ -131,4 +134,3 @@ def _safe_parse_json(text: str) -> Dict[str, Any]:
             "optimization_notes": "N/A",
             "applied_historical_rules": [],
         }
-
